@@ -185,15 +185,17 @@ class Node;
 
 class Link {
 public:
-    const Node* side_a;
-    const Node* side_b;
+    Node *side_a, *side_b;
 private:
     double delay;
     double delay_per_byte;
     double static_packet_loss;
 
 public:
-    Link(Node* a, Node* b, double latency_, double megabit_per_second_, double static_packet_loss_);
+    Link(Node* side_a_, Node* side_b_, double latency_in_ms, double megabit_per_s, double static_packet_loss_) :
+        side_a(side_a_), side_b(side_b_),
+        delay(latency_in_ms * 0.001), delay_per_byte(0.000008 / megabit_per_s), static_packet_loss(static_packet_loss_)
+    {}
 
     double getDelay(int size) const {
         return delay + delay_per_byte * size;
@@ -242,7 +244,12 @@ public:
 
     Node(double delay_, double delay_per_byte_) : delay(delay_), delay_per_byte(delay_per_byte_) {}
 
-    friend class Link;
+    std::unique_ptr<Link> AddLink(Node* othernode, double latency_in_ms, double megabit_per_s, double static_packet_loss) {
+        std::unique_ptr<Link> link(new Link(this, othernode, latency_in_ms, megabit_per_s, static_packet_loss));
+        this->destinations.push_back(link.get());
+        othernode->destinations.push_back(link.get());
+        return link;
+    }
 };
 
 Simulation::Simulation(double fee_per_byte_, double difficulty, const std::vector<std::unique_ptr<Node> >& nodes) : fee_per_byte(fee_per_byte_) {
@@ -253,11 +260,6 @@ Simulation::Simulation(double fee_per_byte_, double difficulty, const std::vecto
         nodes[n]->Initialize(this);
     }
 }
-
-Link::Link(Node* a, Node* b, double delay_, double delay_per_byte_, double static_packet_loss_) : side_a(a), side_b(b), delay(delay_), delay_per_byte(delay_per_byte_), static_packet_loss(static_packet_loss_) {
-    a->destinations.push_back(this);
-    b->destinations.push_back(this);
-};
 
 class Miner : public Node {
 protected:
@@ -325,7 +327,7 @@ public:
     }
 
     void AddLink(int node1, int node2, double latency_in_ms, double megabit_per_s, double static_packet_loss) {
-        links.push_back(std::unique_ptr<Link>(new Link(nodes[node1].get(), nodes[node2].get(), latency_in_ms * 0.001, 0.000008 / megabit_per_s, static_packet_loss)));
+        links.push_back(nodes[node1].get()->AddLink(nodes[node2].get(), latency_in_ms, megabit_per_s, static_packet_loss));
     }
 };
 

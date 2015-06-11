@@ -183,13 +183,20 @@ public:
 
 class Node;
 
-struct Link {
+class Link {
+public:
     const Node* side_a;
     const Node* side_b;
+private:
     double delay;
     double delay_per_byte;
 
+public:
     Link(Node* a, Node* b, double latency_, double megabit_per_second_);
+
+    double getDelay(int size) const {
+        return delay + delay_per_byte * size;
+    }
 };
 
 class Node : public BlockReceiver {
@@ -225,7 +232,7 @@ public:
             } else {
                 peer = link->side_a;
             }
-            simul->AddEvent(time + link->delay + link->delay_per_byte * block->size, peer, EVENT_TYPE_RECEIVED_BLOCK, block);
+            simul->AddEvent(time + link->getDelay(block->size), peer, EVENT_TYPE_RECEIVED_BLOCK, block);
         }
     }
 

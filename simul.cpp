@@ -189,16 +189,22 @@ public:
 private:
     double delay;
     double delay_per_byte;
+    double megabit_per_s;
     double static_packet_loss;
 
 public:
-    Link(Node* side_a_, Node* side_b_, double latency_in_ms, double megabit_per_s, double static_packet_loss_) :
+    Link(Node* side_a_, Node* side_b_, double latency_in_ms, double megabit_per_s_, double static_packet_loss_) :
         side_a(side_a_), side_b(side_b_),
-        delay(latency_in_ms * 0.001), delay_per_byte(0.000008 / megabit_per_s), static_packet_loss(static_packet_loss_)
+        delay(latency_in_ms * 0.001), delay_per_byte(0.000008 / megabit_per_s_), megabit_per_s(megabit_per_s_), static_packet_loss(static_packet_loss_)
     {}
 
     double getDelay(int size) const {
-        return delay + delay_per_byte * size;
+        if (static_packet_loss == 0)
+            // TCP theoretical throughput for a simplified single TCP link across a dedicated link
+            return delay + (delay_per_byte * size) * 0.75;
+        else
+            // TCP throughput by http://ccr.sigcomm.org/archive/1997/jul97/ccr-9707-mathis.pdf
+            return size / (1460 * sqrt((double)3/4) / (delay * 2 * sqrt(static_packet_loss)));
     }
 };
 

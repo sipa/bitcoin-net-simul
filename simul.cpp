@@ -190,9 +190,10 @@ public:
 private:
     double delay;
     double delay_per_byte;
+    double static_packet_loss;
 
 public:
-    Link(Node* a, Node* b, double latency_, double megabit_per_second_);
+    Link(Node* a, Node* b, double latency_, double megabit_per_second_, double static_packet_loss_);
 
     double getDelay(int size) const {
         return delay + delay_per_byte * size;
@@ -253,7 +254,7 @@ Simulation::Simulation(double fee_per_byte_, double difficulty, const std::vecto
     }
 }
 
-Link::Link(Node* a, Node* b, double delay_, double delay_per_byte_) : side_a(a), side_b(b), delay(delay_), delay_per_byte(delay_per_byte_) {
+Link::Link(Node* a, Node* b, double delay_, double delay_per_byte_, double static_packet_loss_) : side_a(a), side_b(b), delay(delay_), delay_per_byte(delay_per_byte_), static_packet_loss(static_packet_loss_) {
     a->destinations.push_back(this);
     b->destinations.push_back(this);
 };
@@ -323,8 +324,8 @@ public:
         return nodes.size();
     }
 
-    void AddLink(int node1, int node2, double latency_in_ms, double megabit_per_s) {
-        links.push_back(std::unique_ptr<Link>(new Link(nodes[node1].get(), nodes[node2].get(), latency_in_ms * 0.001, 0.000008 / megabit_per_s)));
+    void AddLink(int node1, int node2, double latency_in_ms, double megabit_per_s, double static_packet_loss) {
+        links.push_back(std::unique_ptr<Link>(new Link(nodes[node1].get(), nodes[node2].get(), latency_in_ms * 0.001, 0.000008 / megabit_per_s, static_packet_loss)));
     }
 };
 
@@ -385,24 +386,24 @@ int main(void) {
     net.AddMiner(50, 50, 500, 2500, 200000000, 0);
     net.AddMiner(50, 50, 500, 2500, 200000000, 0);
     net.AddMiner(50, 50, 500, 3000, 200000000, 0);
-    net.AddLink(0, 1, 5, 1000);
-    net.AddLink(1, 2, 5, 1000);
-    net.AddLink(2, 0, 5, 1000);
+    net.AddLink(0, 1, 5, 1000, 0);
+    net.AddLink(1, 2, 5, 1000, 0);
+    net.AddLink(2, 0, 5, 1000, 0);
 
     // Four small miners, with 5% hashrate each, with a few 100 Mbit/s links between them.
     net.AddMiner(100, 30, 2000, 500, 1200000, 1);
     net.AddMiner(100, 30, 2000, 500, 1200000, 1);
     net.AddMiner(100, 30, 2000, 500, 1200000, 1);
     net.AddMiner(100, 30, 2000, 500, 1200000, 1);
-    net.AddLink(3, 4, 200, 100);
-    net.AddLink(3, 5, 200, 100);
-    net.AddLink(3, 6, 200, 100);
-    net.AddLink(4, 5, 200, 100);
-    net.AddLink(4, 6, 200, 100);
-    net.AddLink(5, 6, 200, 100);
+    net.AddLink(3, 4, 200, 100, 0);
+    net.AddLink(3, 5, 200, 100, 0);
+    net.AddLink(3, 6, 200, 100, 0);
+    net.AddLink(4, 5, 200, 100, 0);
+    net.AddLink(4, 6, 200, 100, 0);
+    net.AddLink(5, 6, 200, 100, 0);
 
     // Each of the small miners connected to two fast miners, with 20 Mbit/s and 300 ms latency.
-    net.AddLink(3, 0, 300, 20);
+    net.AddLink(3, 0, 300, 20, 0.1);
 
     std::map<int, double> ret;
     RunSimulations(&net, 0.00001000, 86400 * 365, 0.005, ret);

@@ -448,19 +448,19 @@ void TryBlockSize(int size_a, int size_b, double total_fees_per_block) {
     net.AddLink(2, 0, 5, 1000);
 
     // Four small miners, with 5% hashrate each, with 100 Mbit/s links between them, processing blocks at 20 Mbit/s.
-    net.AddMiner(100, 20, 2000, 500, size_b, 1);
-    net.AddMiner(100, 20, 2000, 500, size_b, 1);
-    net.AddMiner(100, 20, 2000, 500, size_b, 1);
-    net.AddMiner(100, 20, 2000, 500, size_b, 1);
-    net.AddLink(3, 4, 200, 100);
-    net.AddLink(3, 5, 200, 100);
-    net.AddLink(3, 6, 200, 100);
-    net.AddLink(4, 5, 200, 100);
-    net.AddLink(4, 6, 200, 100);
-    net.AddLink(5, 6, 200, 100);
+    net.AddMiner(50, 50, 500, 500, size_b, 1);
+    net.AddMiner(50, 50, 500, 500, size_b, 1);
+    net.AddMiner(50, 50, 500, 500, size_b, 1);
+    net.AddMiner(50, 50, 500, 500, size_b, 1);
+    net.AddLink(3, 4, 5, 1000);
+    net.AddLink(3, 5, 5, 1000);
+    net.AddLink(3, 6, 5, 1000);
+    net.AddLink(4, 5, 5, 1000);
+    net.AddLink(4, 6, 5, 1000);
+    net.AddLink(5, 6, 5, 1000);
 
-    // The two groups connected with 2 Mbit/s and 300 ms latency.
-    net.AddLink(3, 0, 300, 2);
+    // The two groups connected with 50 Mbit/s and 300 ms latency.
+    net.AddLink(3, 0, 300, 100);
 
     std::map<int, double> ret;
 
@@ -472,7 +472,7 @@ void TryBlockSize(int size_a, int size_b, double total_fees_per_block) {
     printf("  * Expected average block size: %f\n", net.total_hashrate_times_blocksize / net.total_hashrate);
     printf("  * Average fee per block: %f\n", net.average_fee_per_block);
     printf("  * Fee per byte: %.10f\n", total_fees_per_block / net.total_hashrate_times_blocksize * net.total_hashrate);
-    RunSimulations(&net, 86400 * 365 / 6, 0.0005, ret);
+    RunSimulations(&net, 86400 * 365 / 6, 0.0005 / 12, ret);
     printf("Result:\n");
     for (const std::pair<int, double>& key : ret) {
         printf("  * Miner group %i: %f%% income (factor %f with hashrate)\n", key.first, key.second * 100, key.second / (net.hashrate_per_account[key.first]) * net.total_hashrate);
@@ -481,9 +481,9 @@ void TryBlockSize(int size_a, int size_b, double total_fees_per_block) {
 }
 
 int main(void) {
-    double fees_per_block[] = {0.25, 2.5, 25};
+    double fees_per_block[] = {0.25, 25};
     int sizes_a[] = {20000000};
-    int sizes_b[] = {1000000, 2000000, 5000000, 10000000, 15000000, 20000000};
+    int sizes_b[] = {1000000, 20000000};
     for (double fee_per_block : fees_per_block) {
         for (int size_a : sizes_a) {
             for (int size_b : sizes_b) {
